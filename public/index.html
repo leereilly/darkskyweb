@@ -1,0 +1,262 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Dark Sky API Example</title>
+
+    <style type="text/css">
+      body {
+        font: 100%/1.5em "Arial", sans-serif;
+      }
+
+      #wrap {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin-left: -20em;
+        margin-top: -9em;
+      }
+
+      table {
+        margin: 1.5em 3em;
+      }
+
+      th {
+        text-align: right;
+      }
+
+      th:after {
+        content: ":\a0";
+      }
+
+      canvas {
+        display: block;
+        margin: 1.5em auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="wrap">
+      <table>
+        <tr>
+          <th>Location</th>
+          <td>
+            <select id="dropdown">
+            </select>
+          </td>
+        </tr>
+
+        <tr>
+          <th>Now</th>
+          <td id="current"></td>
+        </tr>
+
+        <tr>
+          <th>Next Hour</th>
+          <td id="forecast"></td>
+        </tr>
+      </table>
+
+      <canvas id="canvas" width="640" height="144"></canvas>
+    </div>
+
+    <script type="text/javascript">
+      var dropdown = document.getElementById ("dropdown"),
+          current = document.getElementById ("current"),
+          forecast = document.getElementById ("forecast"),
+          canvas = document.getElementById ("canvas"),
+          ctx = canvas.getContext ("2d"),
+          locations = [],
+          lat, lon
+
+      function getJSON (url, callback) {
+        var req = new XMLHttpRequest ()
+        req.open ("GET", url, true)
+        req.onreadystatechange = function () {
+          if (req.readyState === 4)
+            return callback (
+              req.status === 200 ? JSON.parse (req.responseText) : null
+            )
+        }
+        req.send (null)
+      }
+
+      function redraw (loc) {
+        var data = loc.data,
+            a = (15 - 3) / (60 - 3),
+            b = (30 - 3) / (60 - 3),
+            c = (45 - 3) / (60 - 3),
+            i
+
+        a = 1 - a * a
+        b = 1 - b * b
+        c = 1 - c * c
+
+        current.innerHTML = loc.current
+        forecast.innerHTML = loc.forecast
+
+        ctx.fillStyle = "white"
+        ctx.fillRect (0, 0, canvas.width, canvas.height)
+
+        ctx.fillStyle = "#cff"
+        for (i = 61; i--; )
+          ctx.fillRect (Math.round (i * (canvas.width - 1) / 60), 0, 1, canvas.height)
+
+        ctx.fillStyle = "#9cc"
+        ctx.fillRect (0, canvas.height - 1, canvas.width, 1)
+        ctx.fillRect (0, Math.round (a * (canvas.height - 1)), canvas.width, 1)
+        ctx.fillRect (0, Math.round (b * (canvas.height - 1)), canvas.width, 1)
+        ctx.fillRect (0, Math.round (c * (canvas.height - 1)), canvas.width, 1)
+        ctx.fillRect (0, 0, canvas.width, 1)
+
+        for (i = 13; i--; )
+          ctx.fillRect (Math.round (i * (canvas.width - 1) / 12), 0, 1, canvas.height)
+
+        ctx.fillStyle = "rgba(0,0,0,0.5)"
+        ctx.beginPath ()
+        ctx.moveTo (0, canvas.height * (1 - data[0].min))
+
+        for (i = 1; i !== data.length; ++i)
+          ctx.lineTo (
+            i * canvas.width / (data.length - 1),
+            canvas.height * (1 - data[i].min)
+          )
+
+        for (i = data.length; i--; )
+          ctx.lineTo (
+            i * canvas.width / (data.length - 1),
+            canvas.height * (1 - data[i].max)
+          )
+
+        ctx.fill ()
+
+        ctx.fillStyle = "black"
+        ctx.lineWidth = 1
+
+        ctx.beginPath ()
+        ctx.moveTo (0, canvas.height * (1 - data[0].min))
+        for (i = 0; i !== data.length; ++i)
+          ctx.lineTo (
+            i * canvas.width / (data.length - 1),
+            canvas.height * (1 - data[i].min)
+          )
+        ctx.stroke ()
+
+        ctx.beginPath ()
+        ctx.moveTo (0, canvas.height * (1 - data[0].max))
+        for (i = 0; i !== data.length; ++i)
+          ctx.lineTo (
+            i * canvas.width / (data.length - 1),
+            canvas.height * (1 - data[i].max)
+          )
+        ctx.stroke ()
+      }
+
+      function reload () {
+        /* FIXME: real loading message please */
+        ctx.fillStyle = "gray"
+        ctx.fillRect (0, 0, canvas.width, canvas.height)
+
+        /* FIXME: Check if lat and lon are truthy */
+        return getJSON ("/darksky?lat=" + lat + "&lon=" + lon, function (data) {
+          if (data === null) {
+            /* FIXME: real error message please */
+            ctx.fillStyle = "red"
+            ctx.fillRect (0, 0, canvas.width, canvas.height)
+            return
+          }
+
+          locations = data
+
+          var html = [],
+              i
+
+          for (i = 0; i !== locations.length; ++i)
+            html.push (
+              "<option>",
+              locations[i].name,
+              " (",
+              locations[i].latitude.toFixed (2),
+              ", ",
+              locations[i].longitude.toFixed (2),
+              ")</option>"
+            )
+
+          dropdown.innerHTML = html.join ("")
+          redraw (locations[0])
+        })
+      }
+
+      dropdown.onchange = function (e) {
+        redraw (locations[e.target.selectedIndex])
+      }
+
+      navigator.geolocation.getCurrentPosition (function (p) {
+        lat = p.coords.latitude
+        lon = p.coords.longitude
+        reload ()
+      })
+
+/*
+      function drawLine (ctx, text, y) {
+        ctx.fillRect (0, y - 1, ctx.canvas.width, 1)
+        ctx.fillText (text, ctx.canvas.width, y - 2)
+      }
+
+      function redraw (ctx, data) {
+        var width = canvas.width,
+            height = canvas.height,
+            i
+
+        ctx.clearRect (0, 0, width, height)
+
+        ctx.fillStyle = "silver"
+        ctx.font = "16px \"Arial\", serif"
+        ctx.textAlign = "end"
+        ctx.textBaseline = "alphabetic"
+        drawLine (ctx, "HEAVY", Math.floor (height * 33 / 73))
+        drawLine (ctx, "MED", Math.floor (height * 53 / 73))
+        drawLine (ctx, "LIGHT", height)
+
+        ctx.fillStyle = "rgba(0,0,0,0.5)"
+        ctx.beginPath ()
+        ctx.moveTo (width, height)
+
+        for (i = data.length; i--; )
+          ctx.lineTo (
+            i * width / (data.length - 1),
+            height - data[i].max * height
+          )
+
+        ctx.lineTo (0, height)
+        ctx.fill ()
+
+        ctx.fillStyle = "black"
+        ctx.beginPath ()
+        ctx.moveTo (width, height)
+
+        for (i = data.length; i--; )
+          ctx.lineTo (
+            i * width / (data.length - 1),
+            height - data[i].min * height
+          )
+
+        ctx.lineTo (0, height)
+        ctx.fill ()
+      }
+
+      function display (lat, lon) {
+        get ("/forecast/" + lat + "," + lon, function (err, forecast) {
+          if (err)
+            return
+
+          forecast = JSON.parse (forecast)
+          document.getElementById ("current").innerHTML = forecast.current
+          document.getElementById ("forecast").innerHTML = forecast.forecast
+          redraw (document.getElementById ("canvas").getContext ("2d"), forecast.data)
+        })
+      }
+*/
+    </script>
+  </body>
+</html>
