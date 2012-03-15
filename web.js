@@ -41,6 +41,7 @@ function locations (query, callback) {
 
       var cities = {},
           i
+
       storms = JSON.parse (storms).storms
 
       for (i = 0; i !== storms.length; ++i) {
@@ -62,7 +63,7 @@ function locations (query, callback) {
 function forecast (lat, lon, callback) {
   return request (
     util.format (
-      "http://localhost:3000/v1/forecast/%s/%d,%d",
+      "https://api.darkskyapp.com/v1/forecast/%s/%d,%d",
       key,
       lat,
       lon
