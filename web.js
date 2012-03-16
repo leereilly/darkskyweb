@@ -67,7 +67,7 @@ app.get ("/darksky", function (req, res, next) {
           k, e
 
       while (i--) {
-        k = (data[i].probability * data[i].intensity - 3) / (60 - 3)
+        k = (data[i].probability * data[i].intensity - 2) / (60 - 2)
         e = data[i].error / 150
         data[i] = {min: clamp (k - e), max: clamp (k + e)}
       }

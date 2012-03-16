@@ -81,9 +81,9 @@
 
       function redraw (loc) {
         var data = loc.data,
-            a = (15 - 3) / (60 - 3),
-            b = (30 - 3) / (60 - 3),
-            c = (45 - 3) / (60 - 3),
+            a = (15 - 2) / (60 - 2),
+            b = (30 - 2) / (60 - 2),
+            c = (45 - 2) / (60 - 2),
             i
 
         a = 1 - a * a
@@ -179,7 +179,7 @@
         dropdown.innerHTML = "<option value=\"lat=" + p.coords.latitude + "&lon=" + p.coords.longitude + "\">Current Location</option>"
         dropdown.selectedIndex = 0
         dropdown.onchange = reload
-        setInterval (reload, 60000)
+        setInterval (reload, 30000)
         reload ()
 
         return getJSON ("/interesting", function (data) {
