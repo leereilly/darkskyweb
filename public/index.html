@@ -65,9 +65,7 @@
           current = document.getElementById ("current"),
           forecast = document.getElementById ("forecast"),
           canvas = document.getElementById ("canvas"),
-          ctx = canvas.getContext ("2d"),
-          locations = [],
-          lat, lon
+          ctx = canvas.getContext ("2d")
 
       function getJSON (url, callback) {
         var req = new XMLHttpRequest ()
@@ -112,7 +110,7 @@
         for (i = 13; i--; )
           ctx.fillRect (Math.round (i * (canvas.width - 1) / 12), 0, 1, canvas.height)
 
-        ctx.fillStyle = "rgba(0,0,0,0.5)"
+        ctx.fillStyle = "rgba(0,0,0,0.333)"
         ctx.beginPath ()
         ctx.moveTo (0, canvas.height * (1 - data[0].min))
 
@@ -153,12 +151,14 @@
       }
 
       function reload () {
-        /* FIXME: real loading message please */
-        ctx.fillStyle = "gray"
-        ctx.fillRect (0, 0, canvas.width, canvas.height)
+        var v = dropdown.value
+        return getJSON ("/darksky?" + v, function (data) {
+          /* Somebody changed the selected location on us mid-load. Oh well,
+           * that means there's another reload going on, so just abort this
+           * one. */
+          if (dropdown.value !== v)
+            return
 
-        /* FIXME: Check if lat and lon are truthy */
-        return getJSON ("/darksky?lat=" + lat + "&lon=" + lon, function (data) {
           if (data === null) {
             /* FIXME: real error message please */
             ctx.fillStyle = "red"
@@ -166,97 +166,32 @@
             return
           }
 
-          locations = data
-
-          var html = [],
-              i
-
-          for (i = 0; i !== locations.length; ++i)
-            html.push (
-              "<option>",
-              locations[i].name,
-              " (",
-              locations[i].latitude.toFixed (2),
-              ", ",
-              locations[i].longitude.toFixed (2),
-              ")</option>"
-            )
-
-          dropdown.innerHTML = html.join ("")
-          redraw (locations[0])
+          redraw (data)
         })
       }
 
-      dropdown.onchange = function (e) {
-        redraw (locations[e.target.selectedIndex])
-      }
+      /* FIXME: real loading message please */
+      ctx.fillStyle = "gray"
+      ctx.fillRect (0, 0, canvas.width, canvas.height)
+
 
       navigator.geolocation.getCurrentPosition (function (p) {
-        lat = p.coords.latitude
-        lon = p.coords.longitude
+        dropdown.innerHTML = "<option value=\"lat=" + p.coords.latitude + "&lon=" + p.coords.longitude + "\">Current Location</option>"
+        dropdown.selectedIndex = 0
+        dropdown.onchange = reload
+        setInterval (reload, 60000)
         reload ()
-      })
 
-/*
-      function drawLine (ctx, text, y) {
-        ctx.fillRect (0, y - 1, ctx.canvas.width, 1)
-        ctx.fillText (text, ctx.canvas.width, y - 2)
-      }
-
-      function redraw (ctx, data) {
-        var width = canvas.width,
-            height = canvas.height,
-            i
-
-        ctx.clearRect (0, 0, width, height)
-
-        ctx.fillStyle = "silver"
-        ctx.font = "16px \"Arial\", serif"
-        ctx.textAlign = "end"
-        ctx.textBaseline = "alphabetic"
-        drawLine (ctx, "HEAVY", Math.floor (height * 33 / 73))
-        drawLine (ctx, "MED", Math.floor (height * 53 / 73))
-        drawLine (ctx, "LIGHT", height)
-
-        ctx.fillStyle = "rgba(0,0,0,0.5)"
-        ctx.beginPath ()
-        ctx.moveTo (width, height)
-
-        for (i = data.length; i--; )
-          ctx.lineTo (
-            i * width / (data.length - 1),
-            height - data[i].max * height
-          )
-
-        ctx.lineTo (0, height)
-        ctx.fill ()
-
-        ctx.fillStyle = "black"
-        ctx.beginPath ()
-        ctx.moveTo (width, height)
-
-        for (i = data.length; i--; )
-          ctx.lineTo (
-            i * width / (data.length - 1),
-            height - data[i].min * height
-          )
-
-        ctx.lineTo (0, height)
-        ctx.fill ()
-      }
-
-      function display (lat, lon) {
-        get ("/forecast/" + lat + "," + lon, function (err, forecast) {
-          if (err)
+        return getJSON ("/interesting", function (data) {
+          if (data === null)
             return
 
-          forecast = JSON.parse (forecast)
-          document.getElementById ("current").innerHTML = forecast.current
-          document.getElementById ("forecast").innerHTML = forecast.forecast
-          redraw (document.getElementById ("canvas").getContext ("2d"), forecast.data)
+          var i = data.length
+
+          while (i--)
+            dropdown.innerHTML += "<option value=\"lat=" + data[i].latitude + "&lon=" + data[i].longitude + "\">" + data[i].name + "</option>"
         })
-      }
-*/
+      })
     </script>
   </body>
 </html>
