@@ -30,10 +30,10 @@ app.get ("/interesting", function (req, res, next) {
       if (httpres.statusCode !== 200)
         return next (new Error ("Received an error from Dark Sky."))
 
-      var i
       storms = JSON.parse (storms).storms
+      var i = storms.length
 
-      for (i = 0; i !== storms.length; ++i)
+      while(i--)
         storms[i] = {
           name: storms[i].city,
           latitude: storms[i].latitude,
