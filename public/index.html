@@ -110,7 +110,7 @@
         for (i = 13; i--; )
           ctx.fillRect (Math.round (i * (canvas.width - 1) / 12), 0, 1, canvas.height)
 
-        ctx.fillStyle = "rgba(0,0,0,0.333)"
+        ctx.fillStyle = "rgba(0,0,0,0.25)"
         ctx.beginPath ()
         ctx.moveTo (0, canvas.height * (1 - data[0].min))
 
@@ -129,23 +129,14 @@
         ctx.fill ()
 
         ctx.fillStyle = "black"
-        ctx.lineWidth = 1
+        ctx.lineWidth = 2
 
         ctx.beginPath ()
-        ctx.moveTo (0, canvas.height * (1 - data[0].min))
+        ctx.moveTo (0, canvas.height * (1 - data[0].mid))
         for (i = 0; i !== data.length; ++i)
           ctx.lineTo (
             i * canvas.width / (data.length - 1),
-            canvas.height * (1 - data[i].min)
-          )
-        ctx.stroke ()
-
-        ctx.beginPath ()
-        ctx.moveTo (0, canvas.height * (1 - data[0].max))
-        for (i = 0; i !== data.length; ++i)
-          ctx.lineTo (
-            i * canvas.width / (data.length - 1),
-            canvas.height * (1 - data[i].max)
+            canvas.height * (1 - data[i].mid)
           )
         ctx.stroke ()
       }
